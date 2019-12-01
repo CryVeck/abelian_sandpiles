@@ -93,13 +93,13 @@ public class Graphes {
 		return g;
 	}
 
-	public static Hashtable<Integer, ArrayList<Integer>> grapheFeuilleHyperbolique(int n, int l) {
-		int c = n * n;
-		Hashtable<Integer, ArrayList<Integer>> g = grapheFeuille(n);
+	public static Hashtable<Integer, ArrayList<Integer>> grapheDiagonale(int l, Hashtable<Integer, ArrayList<Integer>> g) {
+		int c = g.size();
+		int sn = (int) Math.sqrt(c);
 		boolean[] L = new boolean[c+1];
 		for(int i = 1; i<L.length; i++) {
-			int[] cp = coordonnees(i, n);
-			if (cp[0]*cp[1]<=l*n)
+			int[] cp = coordonnees(i, sn);
+			if (Math.abs((-cp[1]+cp[0]))<=l)
 				L[i] = true;
 		}
 		
@@ -108,7 +108,7 @@ public class Graphes {
 			if (L[entry.getKey()]) {
 				ArrayList<Integer> values = entry.getValue();
 				for (int i = 0; i < values.size(); i++)
-					if (!L[values.get(i)])
+					if (!L[values.get(i)]) 
 						values.set(i, 0);
 			} else {
 				//it.remove();
@@ -120,7 +120,34 @@ public class Graphes {
 		return g;
 	}
 	
-	public static Hashtable<Integer, ArrayList<Integer>> grapheAvamancheOriente(int profondeur, int n) {
+	public static Hashtable<Integer, ArrayList<Integer>> grapheHyperbolique(int l, Hashtable<Integer, ArrayList<Integer>> g) {
+		int c = g.size();
+		int sn = (int) Math.sqrt(c);
+		boolean[] L = new boolean[c+1];
+		for(int i = 1; i<L.length; i++) {
+			int[] cp = coordonnees(i, sn);
+			if (cp[0]*cp[1]<=l*sn)
+				L[i] = true;
+		}
+		
+		for(Iterator<Entry<Integer, ArrayList<Integer>>> it = g.entrySet().iterator(); it.hasNext(); ) {
+		    Entry<Integer, ArrayList<Integer>> entry = it.next();
+			if (L[entry.getKey()]) {
+				ArrayList<Integer> values = entry.getValue();
+				for (int i = 0; i < values.size(); i++)
+					if (!L[values.get(i)]) 
+						values.set(i, 0);
+			} else {
+				//it.remove();
+				ArrayList<Integer> values = entry.getValue();
+				for (int i = 0; i < values.size(); i++)
+					values.set(i,  0);
+			}
+		}
+		return g;
+	}
+	
+	public static Hashtable<Integer, ArrayList<Integer>> grapheAvalancheOriente(int profondeur, int n) {
 		Hashtable<Integer, ArrayList<Integer>> g = new Hashtable<Integer, ArrayList<Integer>>();
 		int dn = n / 2;
 		g.put(dn, toTab(0, dn - 1, dn + 1, dn + n));

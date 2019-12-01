@@ -9,12 +9,14 @@ public class Tipe {
 	public static final String prefixe = "A";
 	public static void main(String[] args) {
 		long t0 = System.currentTimeMillis();
-		int n = 10;
-		Hashtable <Integer, ArrayList<Integer>> g = Graphes.graphe3Neighbour(n);
-		System.out.println(g);
-		int[] configuration = configurationComplete(n*n, 10);
-		int lap[][]  = laplacienne(g, n*n+1);
-		stabSuivi(g, configuration, lap, n*n+1);
+		int n = 50;
+		//Hashtable <Integer, ArrayList<Integer>> g = Graphes.grapheDiagonale(10, Graphes.grapheFeuille(n));
+		Hashtable <Integer, ArrayList<Integer>> gp = Graphes.grapheFeuille(n);
+		calculIdentite(gp, true);
+//		int[] configuration = configurationComplete(n*n, );
+	//	int lap[][]  = laplacienne(g, n*n+1);
+		//stabSuivi(g, configuration, lap, n*n+1);
+		//calculIdentite(g, n*n, true);
 		System.out.println(System.currentTimeMillis() - t0);
 	}
 	
@@ -37,17 +39,17 @@ public class Tipe {
 		return J;
 	}
 
-	public static void topple(Hashtable<Integer, ArrayList<Integer>> graphe, int[][] lap, int[] configuration, int n,
-			int x) {
-		Set<Integer> keys = graphe.keySet();
+	public static void topple(int[][] lap, int[] configuration,
+			int x, Set<Integer> keys) {
 		for (int y : keys)
 			configuration[y] -= lap[x][y];
 	}
 
 	public static void unStab(Hashtable<Integer, ArrayList<Integer>> graphe, int[] configuration, int[][] lap, int n) {
 		ArrayList<Integer> si = sitesInstables(lap, configuration, n);
+		Set<Integer> keys = graphe.keySet();
 		for (int j : si)
-			topple(graphe, lap, configuration, n, j);
+			topple(lap, configuration, j, keys);
 	}
 
 	public static boolean estStable(int[][] lap, int[] configuration, int n) {
@@ -63,24 +65,22 @@ public class Tipe {
 		}
 	}
 
-	public static int[] calculIdentite(Hashtable<Integer, ArrayList<Integer>> graphe, int lg, boolean suivi) {
-		int[][] lap = laplacienne(graphe, lg + 1);
-		int[] configuration = new int[lg + 1];
-		for (int i = 1; i < lg + 1; i++) {
-			configuration[i] = lap[i][i] - 1;
-		}
+	public static int[] calculIdentite(Hashtable<Integer, ArrayList<Integer>> graphe, boolean suivi) {
+		int s = graphe.size();
+		int[][] lap = laplacienne(graphe, s+1);
+		int[] configuration = configurationCritique(lap);
 		int[] tmp = Maths.multMatInt(configuration, 2);
-		stab(graphe, tmp, lap, lg + 1);
+		stab(graphe, tmp, lap, s+1);
 		tmp = Maths.subMatMat(Maths.multMatInt(configuration, 2), tmp);
 		if (!suivi)
-			stab(graphe, tmp, lap, lg + 1);
+			stab(graphe, tmp, lap, s=1);
 		else
-			stabSuivi(graphe, tmp, lap, lg + 1);
+			stabSuivi(graphe, tmp, lap, s+1);
 		return tmp;
 	}
 
-	public static int[] calculIdentite(Hashtable<Integer, ArrayList<Integer>> graphe, int lg) {
-		return calculIdentite(graphe, lg, false);
+	public static int[] calculIdentite(Hashtable<Integer, ArrayList<Integer>> graphe) {
+		return calculIdentite(graphe, false);
 	}
 
 	public static int[] configurationAleatoire(int n) {
@@ -91,9 +91,10 @@ public class Tipe {
 		return result;
 	}
 
-	public static int[] configurationCritique(int[][] lap, int lg) {
+	public static int[] configurationCritique(int[][] lap) {
+		int lg = lap[0].length;
 		int[] configuration = new int[lg + 1];
-		for (int i = 1; i < lg + 1; i++)
+		for (int i = 1; i < lg; i++)
 			configuration[i] = lap[i][i] - 1;
 		return configuration;
 	}

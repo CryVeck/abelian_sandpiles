@@ -10,7 +10,7 @@ import javax.imageio.ImageIO;
 
 public class Rendu {
 	
-	public static final int SIZE=5;
+	public static final int SIZE=3;
 	
 	public static void save (String nom, int[] tab, int width, int height, int maxColor) {
 		File nomfichier = new File("/home/grothendieck/out/"+nom + ".png");
