@@ -92,44 +92,41 @@ public class Graphes {
 		}
 		return g;
 	}
-
-	public static Hashtable<Integer, ArrayList<Integer>> grapheDiagonale(int l, Hashtable<Integer, ArrayList<Integer>> g) {
+	
+	public static Hashtable<Integer, ArrayList<Integer>> grapheConditionnel (Hashtable<Integer, ArrayList<Integer>> g, Condition condition) {
 		int c = g.size();
 		int sn = (int) Math.sqrt(c);
 		boolean[] L = new boolean[c+1];
 		for(int i = 1; i<L.length; i++) {
 			int[] cp = coordonnees(i, sn);
-			if (Math.abs((-cp[1]+cp[0]))<=l)
+			if (condition.cond(cp, sn))//La condition que l'on met en parametre est utilise ici
 				L[i] = true;
 		}
-		
-		for(Iterator<Entry<Integer, ArrayList<Integer>>> it = g.entrySet().iterator(); it.hasNext(); ) {
-		    Entry<Integer, ArrayList<Integer>> entry = it.next();
-			if (L[entry.getKey()]) {
-				ArrayList<Integer> values = entry.getValue();
-				for (int i = 0; i < values.size(); i++)
-					if (!L[values.get(i)]) 
-						values.set(i, 0);
-			} else {
-				//it.remove();
-				ArrayList<Integer> values = entry.getValue();
-				for (int i = 0; i < values.size(); i++)
-					values.set(i,  0);
-			}
-		}
-		return g;
+		return masqueGeometrique(g, L);
+	}
+
+	public static Hashtable<Integer, ArrayList<Integer>> grapheCercle(int l, Hashtable<Integer, ArrayList<Integer>> g, double r) {
+		return grapheConditionnel(g,
+				(int[] cp, int sn) -> Math.pow(Math.abs(cp[1]-(sn)/2-1/2),r)+Math.pow(Math.abs(cp[0]-(sn)/2-1/2),  r)<=Math.pow(l, r));
 	}
 	
-	public static Hashtable<Integer, ArrayList<Integer>> grapheHyperbolique(int l, Hashtable<Integer, ArrayList<Integer>> g) {
-		int c = g.size();
-		int sn = (int) Math.sqrt(c);
-		boolean[] L = new boolean[c+1];
-		for(int i = 1; i<L.length; i++) {
-			int[] cp = coordonnees(i, sn);
-			if (cp[0]*cp[1]<=l*sn)
-				L[i] = true;
-		}
-		
+	public static Hashtable<Integer, ArrayList<Integer>> grapheDiagonale(int l, Hashtable<Integer, ArrayList<Integer>> g) {
+		return grapheConditionnel(g,
+				(int[] cp, int sn) -> Math.abs((-cp[1]+cp[0]))<=l);
+	}
+	
+	
+	public static Hashtable<Integer, ArrayList<Integer>> grapheTriangle(Hashtable<Integer, ArrayList<Integer>> g) {
+		return grapheConditionnel(g,
+				(int[] cp, int sn) -> Math.abs((cp[0]))<=cp[1]);
+	}
+	
+	public static Hashtable<Integer, ArrayList<Integer>> grapheHyperbolique(int l, Hashtable<Integer, ArrayList<Integer>> g) {		
+		return grapheConditionnel(g,
+				(int[] cp, int sn) -> cp[0]*cp[1]<=l*sn);
+	}
+	
+	public static Hashtable<Integer, ArrayList<Integer>> masqueGeometrique(Hashtable<Integer, ArrayList<Integer>> g, boolean[] L) {
 		for(Iterator<Entry<Integer, ArrayList<Integer>>> it = g.entrySet().iterator(); it.hasNext(); ) {
 		    Entry<Integer, ArrayList<Integer>> entry = it.next();
 			if (L[entry.getKey()]) {
@@ -171,4 +168,9 @@ public class Graphes {
 		l.addAll(Arrays.asList(values));
 		return l;
 	}
+	
+}
+
+interface Condition {
+	public boolean cond(int[] cp, int sn);
 }

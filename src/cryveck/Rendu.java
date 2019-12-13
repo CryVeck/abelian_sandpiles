@@ -5,12 +5,33 @@ import java.awt.Graphics;
 import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.IOException;
+import java.util.Queue;
+import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.stream.Stream;
 
 import javax.imageio.ImageIO;
 
 public class Rendu {
 	
 	public static final int SIZE=3;
+	
+	public static int maxSizeList = 10;
+	public static Queue<GraphePreProcessImage> globalQueue = new ConcurrentLinkedQueue<GraphePreProcessImage>();
+	
+	public synchronized static void saveParallel (String nom, int[] tab, int width, int height, int maxColor) {
+		globalQueue.add(new GraphePreProcessImage(nom, tab, width, height, maxColor));
+		if (globalQueue.size() >= maxSizeList)
+			processList();
+	}
+	
+	public static void processList () {
+		globalQueue.parallelStream().forEach(gppi -> processSave(gppi));
+	}
+	
+	private static void processSave (GraphePreProcessImage gppi) {
+		globalQueue.remove(gppi);
+		save(gppi.title, gppi.tab, gppi.width, gppi.height, gppi.maxColor);
+	}
 	
 	public static void save (String nom, int[] tab, int width, int height, int maxColor) {
 		File nomfichier = new File("/home/grothendieck/out/"+nom + ".png");
@@ -26,13 +47,19 @@ public class Rendu {
 	public static void render(Graphics g, int[] tab, int size, int width, int height, int maxColor) {
 		for (int i = 0; i < width; i++)
 			for (int j = 0; j < height; j++) {
-				g.setColor(getColor(tab[i + j*width + 1], maxColor, 0));
+				g.setColor(getColorProcess(tab[i + j*width + 1], maxColor, 0, (double param) -> Math.pow(param, 0.5)));//(double param) -> Math.pow(param, 0.2) ; (double param) -> param renvoie id (i.e la fonction getColor)
 				g.fillRect(i*size, j*size, size, size);
 			}
 	}
 	
-	public static Color getColor(double value, int max, int min) {
-		double map = (double) (Math.max(Math.min(value, max) - min, 0)/(max - min)*255);
+	public static Color getColorProcess(double value, double max, double min, ColorProcess cp) {
+		return getColor(cp.proccessValues(value), cp.proccessValues(max), cp.proccessValues(min));
+	}
+
+	public static Color getColor(double value, double max, double min) {
+		double map = (Math.max(Math.min(value, max) - min, 0)/(max - min)*255);
+		
+		
 		double facteur = 255/85;
 		if (map < 85) {
 			return new Color(0, (int) (map*facteur), 255);
@@ -92,4 +119,17 @@ public class Rendu {
 		}
 		System.out.println();
 	}
+	
+	
+	//Tests
+	public static void main(String[] args) {
+		Stream<Integer> infiniteStream = Stream.iterate(0, i -> i + 2);
+		infiniteStream.parallel().limit(50).forEach(a -> System.out.println(a));
+		System.out.println("a");
+	}
+	
+}
+
+interface ColorProcess {
+	public abstract double proccessValues(double value);
 }
