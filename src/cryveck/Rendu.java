@@ -34,7 +34,7 @@ public class Rendu {
 	}
 	
 	public static void save (String nom, int[] tab, int width, int height, int maxColor) {
-		File nomfichier = new File("/home/grothendieck/out/"+nom + ".png");
+		File nomfichier = new File("/home/grothendieck/out/" + nom + ".png");
 		BufferedImage bi = new BufferedImage(width*SIZE, height*SIZE, BufferedImage.TYPE_3BYTE_BGR);
 		render(bi.getGraphics(), tab, SIZE, width, height, maxColor);
 		try {

@@ -6,14 +6,14 @@ import java.util.Random;
 import java.util.Scanner;
 public class Tipe {
 
-	public static final String prefixe = "avalanche";
+	public static final String PREFIXE = "avalanche";
 	public static void main(String[] args) {
 		Scanner sc = new Scanner(System.in);
-		while (!sc.nextLine().equals("go"));
+//		while (!sc.nextLine().equals("go"));
 		long t0 = System.currentTimeMillis();
-		int n = 400;
+		int n = 60;
 		//Hashtable <Integer, ArrayList<Integer>> g = Graphes.graphe3NeighbourVariante(60);
-		//int configuration[] = configurationAleatoire(60*60+1,2);
+		//int configuration[] = configurationAleatoire(60*60+1,2)
 		//configuration[80] = 3;
 		//int lap[][] = laplacienne(g, 60*60+1);
 		//stabSuivi(g, configuration, lap, 60*60+1);
@@ -21,11 +21,11 @@ public class Tipe {
 		//Hashtable <Integer, ArrayList<Integer>> gP = Graphes.grapheCercle(45, Graphes.grapheFeuille(100), 2);
 		Hashtable <Integer, ArrayList<Integer>> gP = Graphes.grapheCercle(n/2-3, Graphes.grapheFeuille(n),0.5);
 		int[] configuration = calculIdentiteDict(gP, false);
-		Rendu.save(prefixe + "-" + "TEST", configuration, n, n, 3);
 		//int[] configuration = configurationAleatoire(n*n+1, max);
 		//stabSuivi(g, configuration, lap, n*n+1);
 		//calculIdentite(g, n*n, true);
 		System.out.println(System.currentTimeMillis()-t0);
+		Rendu.save(PREFIXE + "-" + "TESTPerform", configuration, n, n, 3);
 		sc.close();
 	}
 	
@@ -68,7 +68,7 @@ public class Tipe {
 	
 	/////////////////////////// LAPLACIENNE DICT
 	
-	
+
 	public static Hashtable<Integer, Hashtable<Integer, Integer>> laplacienneDict(Hashtable<Integer, ArrayList<Integer>> graphe, int n) {
 		Hashtable<Integer, Hashtable<Integer, Integer>> M = new Hashtable<Integer, Hashtable<Integer, Integer>>(); 
 		for (int i = 0; i < n; i++)
@@ -99,8 +99,8 @@ public class Tipe {
 		tmp = Maths.subMatMat(Maths.multMatInt(configuration, 2), tmp);
 		if (!suivi)
 			stabDict(graphe, tmp, lap, s+1);
-//		else
-//			stabSuivi(graphe, tmp, lap, s+1);
+		else
+			stabSuiviDict(graphe, tmp, lap, s+1);
 		return tmp;
 	}
 	
@@ -155,5 +155,116 @@ public class Tipe {
 			
 		return J;
 	}
+	
+	public static int[] stabSuiviDict(Hashtable<Integer, ArrayList<Integer>> graphe, int[] configuration, Hashtable<Integer, Hashtable<Integer, Integer>> lap,
+			int n) {
+		int couleurmaximale = Integer.MIN_VALUE;
+		for (int i = 0; i < configuration.length; i++)
+			couleurmaximale = Math.max(couleurmaximale, configuration[i]);
+		int r = 1;
+		int taille = (int) Math.sqrt(n);
+		Rendu.save(PREFIXE + "-" + String.format("%05d", 0), configuration, taille, taille, couleurmaximale);
+		while (!estStableDict(lap, configuration, n)) {
+			unStabDict(graphe, configuration, lap, n);
+			Rendu.save(PREFIXE + "-" + String.format("%05d", r++), configuration, taille, taille, couleurmaximale);
+		}
+		return configuration;
+	}
 
+	
+	////////////////////// LAPLACIENNE DICT TEST
+	
+	//Pas de bonnes performances :/
+	
+	public static Hashtable<Long , Integer> laplacienneDictTest(Hashtable<Integer, ArrayList<Integer>> graphe, int n) {
+		Hashtable<Long, Integer> M = new Hashtable<Long, Integer>(); 
+		for (int i = 0; i < n; i++)
+			if (graphe.containsKey(i)) {
+				Long k1 = (long)i << 32 | i;
+				M.put(k1, graphe.get(i).size());
+				for (int j : graphe.get(i))
+					if(M.get(k1) == null) {
+						M.put(k1, -1);
+					} else {
+						long k2 = (long)i << 32 | j;
+						if (M.get(k2) != null)
+							M.put(k2, M.get(k2) - 1);
+						else
+							M.put(k2, -1);
+					}
+			}
+		return M;
+	}
+	
+	public static int[] calculIdentiteDictTest(Hashtable<Integer, ArrayList<Integer>> graphe, boolean suivi) {
+		int s = graphe.size();
+		Hashtable<Long, Integer> lap = laplacienneDictTest(graphe, s+1);
+		int[] configuration = configurationCritiqueDictTest(lap, s+1);
+		int[] tmp = Maths.multMatInt(configuration, 2);
+		stabDictTest(graphe, tmp, lap, s+1);
+		tmp = Maths.subMatMat(Maths.multMatInt(configuration, 2), tmp);
+		if (!suivi)
+			stabDictTest(graphe, tmp, lap, s+1);
+		else
+			stabSuiviDictTest(graphe, tmp, lap, s+1);
+		return tmp;
+	}
+	
+	public static int[] configurationCritiqueDictTest(Hashtable<Long , Integer> lap, int lg) {
+		int[] configuration = new int[lg];
+		for (int i = 1; i < lg; i++) {
+			configuration[i] = lap.get((long)i << 32 | i) - 1;
+		}
+		return configuration;
+	}
+	
+	public static void stabDictTest(Hashtable<Integer, ArrayList<Integer>> graphe, int[] configuration, Hashtable<Long, Integer> lap, int n) {
+		while (!estStableDictTest(lap, configuration, n)) {
+			unStabDictTest(graphe, configuration, lap, n);
+		}
+	}
+	
+	public static boolean estStableDictTest(Hashtable<Long, Integer> lap, int[] configuration, int n) {
+		for (int i = 1; i < n; i++) {
+			if (configuration[i] >= lap.get((long)i << 32 | i))
+				return false;
+		}
+		return true;
+	}
+	
+	public static void unStabDictTest(Hashtable<Integer, ArrayList<Integer>> graphe, int[] configuration, Hashtable<Long, Integer> lap, int n) {
+		ArrayList<Integer> si = sitesInstablesDictTest(lap, configuration, n);
+		for (int x : si) {
+			configuration[x] -= lap.get((long)x << 32 | x);
+			for (int y : graphe.get(x)) {
+				Integer k = lap.get((long)x << 32 | y);
+				if (k != null)
+					configuration[y] -= k;
+			}
+		}
+	}
+	
+	public static ArrayList<Integer> sitesInstablesDictTest(Hashtable<Long, Integer> lap, int[] configuration, int n) {
+		ArrayList<Integer> J = new ArrayList<Integer>();
+		for (int i = 1; i < n; i++)
+			if (configuration[i] >= lap.get((long)i << 32 | i))
+				J.add(i);
+		return J;
+	}
+	
+	public static int[] stabSuiviDictTest(Hashtable<Integer, ArrayList<Integer>> graphe, int[] configuration, Hashtable<Long, Integer> lap,
+			int n) {
+		int couleurmaximale = Integer.MIN_VALUE;
+		for (int i = 0; i < configuration.length; i++)
+			couleurmaximale = Math.max(couleurmaximale, configuration[i]);
+		int r = 1;
+		int taille = (int) Math.sqrt(n);
+		Rendu.save(PREFIXE + "-" + String.format("%05d", 0), configuration, taille, taille, couleurmaximale);
+		while (!estStableDictTest(lap, configuration, n)) {
+			unStabDictTest(graphe, configuration, lap, n);
+			Rendu.save(PREFIXE + "-" + String.format("%05d", r++), configuration, taille, taille, couleurmaximale);
+		}
+		return configuration;
+	}
+	
 }
