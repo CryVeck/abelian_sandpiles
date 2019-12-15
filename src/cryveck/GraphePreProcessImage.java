@@ -6,15 +6,13 @@ public class GraphePreProcessImage {
 	public int[] tab;
 	public int width;
 	public int height;
-	public int maxColor;
 	
-	public GraphePreProcessImage(String title, int[] tab, int width, int height, int maxColor) {
+	public GraphePreProcessImage(String title, int[] tab, int width, int height) {
 		super();
 		this.title = title;
 		this.tab = tab;
 		this.width = width;
 		this.height = height;
-		this.maxColor = maxColor;
 	}
 	
 	

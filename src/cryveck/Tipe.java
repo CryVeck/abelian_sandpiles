@@ -4,29 +4,49 @@ import java.util.ArrayList;
 import java.util.Hashtable;
 import java.util.Random;
 import java.util.Scanner;
+
 public class Tipe {
 
+	//DÉBUT PARAMÈTRES
 	public static final String PREFIXE = "avalanche";
+	public static final int MAX_SIZE_LIST_IMAGE_BEFORE_PROCESS = 10;
+	public static final int SAVE_IMAGE_PIXEL_SIZE = 3;
+	public static final ColorProcess cp = (double param) -> Math.pow(param, 0.5);//(double param) -> Math.pow(param, 0.2) ; (double param) -> param renvoie id (i.e la fonction getColor)
+	public static final boolean DEMANDE_GO = false;
+	public static final int N = 60;
+	//FIN PARAMÈTRES
+	
+	public static Rendu rendu = new Rendu(MAX_SIZE_LIST_IMAGE_BEFORE_PROCESS, SAVE_IMAGE_PIXEL_SIZE, cp);
+	
 	public static void main(String[] args) {
-		Scanner sc = new Scanner(System.in);
-//		while (!sc.nextLine().equals("go"));
+		Scanner sc;
+		if (DEMANDE_GO) {
+			sc = new Scanner(System.in);
+			while (!sc.nextLine().equals("go"));
+		}
 		long t0 = System.currentTimeMillis();
-		int n = 60;
+		tests();
+		System.out.println("Temps total d'éxecution : " + (System.currentTimeMillis()-t0));
+		if (DEMANDE_GO)
+			sc.close();
+	}
+	
+	public static void tests () { // Mettre le baza là dedans
+		
 		//Hashtable <Integer, ArrayList<Integer>> g = Graphes.graphe3NeighbourVariante(60);
 		//int configuration[] = configurationAleatoire(60*60+1,2)
 		//configuration[80] = 3;
 		//int lap[][] = laplacienne(g, 60*60+1);
 		//stabSuivi(g, configuration, lap, 60*60+1);
-		//Hashtable <Integer, ArrayList<Integer>> g = Graphes.grapheDiagonale(10, Graphes.grapheFeuille(n));
+		//Hashtable <Integer, ArrayList<Integer>> g = Graphes.grapheDiagonale(10, Graphes.grapheFeuille(N));
 		//Hashtable <Integer, ArrayList<Integer>> gP = Graphes.grapheCercle(45, Graphes.grapheFeuille(100), 2);
-		Hashtable <Integer, ArrayList<Integer>> gP = Graphes.grapheCercle(n/2-3, Graphes.grapheFeuille(n),0.5);
+		Hashtable <Integer, ArrayList<Integer>> gP = Graphes.grapheCercle(N/2-3, Graphes.grapheFeuille(N),0.5);
 		int[] configuration = calculIdentiteDict(gP, false);
-		//int[] configuration = configurationAleatoire(n*n+1, max);
-		//stabSuivi(g, configuration, lap, n*n+1);
-		//calculIdentite(g, n*n, true);
-		System.out.println(System.currentTimeMillis()-t0);
-		Rendu.save(PREFIXE + "-" + "TESTPerform", configuration, n, n, 3);
-		sc.close();
+		//int[] configuration = configurationAleatoire(N*N+1, max);
+		//stabSuivi(g, configuration, lap, N*N+1);
+		//calculIdentite(g, N*N, true);
+		rendu.setColorRange(3, 0);//Définition de l'intervalle pour le calcul des couleurs
+		rendu.save(PREFIXE + "-" + "TESTPerform", configuration, N, N);//Comme avant sauf que l'on ne met plus l'intervalle de couleurs
 	}
 	
 	public static int[] calculAire(int[] configuration) {
@@ -163,10 +183,11 @@ public class Tipe {
 			couleurmaximale = Math.max(couleurmaximale, configuration[i]);
 		int r = 1;
 		int taille = (int) Math.sqrt(n);
-		Rendu.save(PREFIXE + "-" + String.format("%05d", 0), configuration, taille, taille, couleurmaximale);
+		rendu.setColorRange(couleurmaximale, 0);
+		rendu.save(PREFIXE + "-" + String.format("%05d", 0), configuration, taille, taille);
 		while (!estStableDict(lap, configuration, n)) {
 			unStabDict(graphe, configuration, lap, n);
-			Rendu.save(PREFIXE + "-" + String.format("%05d", r++), configuration, taille, taille, couleurmaximale);
+			rendu.save(PREFIXE + "-" + String.format("%05d", r++), configuration, taille, taille);
 		}
 		return configuration;
 	}
@@ -259,10 +280,11 @@ public class Tipe {
 			couleurmaximale = Math.max(couleurmaximale, configuration[i]);
 		int r = 1;
 		int taille = (int) Math.sqrt(n);
-		Rendu.save(PREFIXE + "-" + String.format("%05d", 0), configuration, taille, taille, couleurmaximale);
+		rendu.setColorRange(couleurmaximale, 0);
+		rendu.save(PREFIXE + "-" + String.format("%05d", 0), configuration, taille, taille);
 		while (!estStableDictTest(lap, configuration, n)) {
 			unStabDictTest(graphe, configuration, lap, n);
-			Rendu.save(PREFIXE + "-" + String.format("%05d", r++), configuration, taille, taille, couleurmaximale);
+			rendu.save(PREFIXE + "-" + String.format("%05d", r++), configuration, taille, taille);
 		}
 		return configuration;
 	}

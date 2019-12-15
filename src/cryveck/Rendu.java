@@ -13,30 +13,59 @@ import javax.imageio.ImageIO;
 
 public class Rendu {
 	
-	public static final int SIZE=3;
+	private int pixelSize;
+	private int maxSizeList;
+	private Queue<GraphePreProcessImage> globalQueue = new ConcurrentLinkedQueue<GraphePreProcessImage>();
 	
-	public static int maxSizeList = 10;
-	public static Queue<GraphePreProcessImage> globalQueue = new ConcurrentLinkedQueue<GraphePreProcessImage>();
+	private ColorProcess cp = (double param) -> param;//Par défaut, l'indentité
 	
-	public synchronized static void saveParallel (String nom, int[] tab, int width, int height, int maxColor) {
-		globalQueue.add(new GraphePreProcessImage(nom, tab, width, height, maxColor));
+	private double colorMax;
+	private double colorMin;
+	private double colorMaxProcess;
+	private double colorMinProcess;
+	
+	public Rendu (int maxSizeList, int pixelSize) {
+		this.maxSizeList = maxSizeList;
+		this.pixelSize = pixelSize;
+	}
+	
+	public Rendu (int maxSizeList, int pixelSize, ColorProcess cp) {
+		this(maxSizeList, pixelSize);
+		setColorProcess(cp);
+	}
+	
+	public void setColorRange(double colorMax, double colorMin) {
+		this.colorMax = colorMax;
+		this.colorMin = colorMin;
+		colorMaxProcess = cp.proccessValues(colorMax);
+		colorMinProcess = cp.proccessValues(colorMin);
+	}
+	
+	public void setColorProcess(ColorProcess cp) {
+		this.cp = cp; 
+		colorMaxProcess = cp.proccessValues(colorMax);
+		colorMinProcess = cp.proccessValues(colorMin);
+	}
+	
+	public synchronized void saveParallel (String nom, int[] tab, int width, int height, int maxColor) {
+		globalQueue.add(new GraphePreProcessImage(nom, tab, width, height));
 		if (globalQueue.size() >= maxSizeList)
 			processList();
 	}
 	
-	public static void processList () {
+	public void processList () {
 		globalQueue.parallelStream().forEach(gppi -> processSave(gppi));
 	}
 	
-	private static void processSave (GraphePreProcessImage gppi) {
+	private void processSave (GraphePreProcessImage gppi) {
 		globalQueue.remove(gppi);
-		save(gppi.title, gppi.tab, gppi.width, gppi.height, gppi.maxColor);
+		save(gppi.title, gppi.tab, gppi.width, gppi.height);
 	}
 	
-	public static void save (String nom, int[] tab, int width, int height, int maxColor) {
+	public void save (String nom, int[] tab, int width, int height) {
 		File nomfichier = new File("/home/grothendieck/out/" + nom + ".png");
-		BufferedImage bi = new BufferedImage(width*SIZE, height*SIZE, BufferedImage.TYPE_3BYTE_BGR);
-		render(bi.getGraphics(), tab, SIZE, width, height, maxColor);
+		BufferedImage bi = new BufferedImage(width*pixelSize, height*pixelSize, BufferedImage.TYPE_3BYTE_BGR);
+		render(bi.getGraphics(), tab, pixelSize, width, height);
 		try {
 			ImageIO.write(bi, "PNG", nomfichier);
 		} catch (IOException e) {
@@ -44,19 +73,20 @@ public class Rendu {
 		}
 	}
 	
-	public static void render(Graphics g, int[] tab, int size, int width, int height, int maxColor) {
+	public void render(Graphics g, int[] tab, int size, int width, int height) {
 		for (int i = 0; i < width; i++)
 			for (int j = 0; j < height; j++) {
-				g.setColor(getColorProcess(tab[i + j*width + 1], maxColor, 0, (double param) -> Math.pow(param, 0.5)));//(double param) -> Math.pow(param, 0.2) ; (double param) -> param renvoie id (i.e la fonction getColor)
+//				g.setColor(getColorProcess(tab[i + j*width + 1], maxColor, 0, (double param) -> Math.pow(param, 0.5)));//(double param) -> Math.pow(param, 0.2) ; (double param) -> param renvoie id (i.e la fonction getColor)
+				g.setColor(getColor(cp.proccessValues(tab[i + j*width + 1]), colorMaxProcess, colorMinProcess));
 				g.fillRect(i*size, j*size, size, size);
 			}
 	}
 	
-	public static Color getColorProcess(double value, double max, double min, ColorProcess cp) {
+	private static Color getColorProcess(double value, double max, double min, ColorProcess cp) {
 		return getColor(cp.proccessValues(value), cp.proccessValues(max), cp.proccessValues(min));
 	}
 
-	public static Color getColor(double value, double max, double min) {
+	private static Color getColor(double value, double max, double min) {
 		double map = (Math.max(Math.min(value, max) - min, 0)/(max - min)*255);
 		
 		
@@ -104,7 +134,6 @@ public class Rendu {
 		}
 		System.out.println();
 	}
-	
 
 	public static void printMat(int[] M) {
 		for (int j = 0; j < M.length; j++) {
@@ -120,12 +149,19 @@ public class Rendu {
 		System.out.println();
 	}
 	
-	
 	//Tests
 	public static void main(String[] args) {
 		Stream<Integer> infiniteStream = Stream.iterate(0, i -> i + 2);
 		infiniteStream.parallel().limit(50).forEach(a -> System.out.println(a));
 		System.out.println("a");
+	}
+
+	public double getColorMax() {
+		return colorMax;
+	}
+
+	public double getColorMin() {
+		return colorMin;
 	}
 	
 }
